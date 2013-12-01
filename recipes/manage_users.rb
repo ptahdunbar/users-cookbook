@@ -9,7 +9,6 @@
 
 if node[:users][:manage_users]
 	node[:users][:manage_users].each do |u|
-
 		home_dir = u['home'] ? u['home'] : "/home/#{u['name']}"
 		manage = true unless u['action'] and 'delete' == u['action']
 
