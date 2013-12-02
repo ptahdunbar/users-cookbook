@@ -9,10 +9,11 @@
 
 if node[:users][:manage_users]
 	node[:users][:manage_users].each do |u|
-		home_dir = u['home'] ? u['home'] : "/home/#{u['name']}"
+		name = u['name'] ? u['name'] : u
+		home_dir = u['home'] ? u['home'] : "/home/#{name}"
 		manage = true unless u['action'] and 'delete' == u['action']
 
-		user u["name"] do
+		user name do
 			supports :manage_home => true
 			shell "/bin/bash" unless u["shell"]
 			password u['password'] if u['password']
@@ -23,22 +24,23 @@ if node[:users][:manage_users]
 
 		if manage
 			directory "#{home_dir}/.ssh" do
-				owner u['name']
-				group u['name']
+				owner name
+				group name
 				mode 0700
 			end
 
-			u['ssh_keys'] and file "#{home_dir}/.ssh/authorized_keys" do
-				owner u['name']
-				group u['name']
-				content "#{u['ssh_keys']}\n"
-				mode 0600
+			u["keys"] and u["keys"].each do |key|
+				execute "authorized_keys for #{key} in #{home_dir}" do
+					user name
+					group name
+					command "curl key >> #{home_dir}/.ssh/authorized_keys"
+				end
 			end
 
-			u['github_ssh_keys'] and u['github_ssh_keys'].split(' ').each do |username|
+			u['github_keys'] and u['github_keys'].each do |username|
 				execute "import github authorized_keys for #{username}" do
-					user u['name']
-					group u['name']
+					user name
+					group name
 					command "curl https://github.com/#{username}.keys >> #{home_dir}/.ssh/authorized_keys"
 				end
 			end
